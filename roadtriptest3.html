@@ -7891,17 +7891,8 @@ function toggleSaveTrip(tripId) {
         showNotification(`🗑️ Η εκδρομή αφαιρέθηκε από τα αποθηκευμένα`, 'warning');
     }
    
-    // ====================
-    // ΒΗΜΑ 6: ΑΠΟΘΗΚΕΥΣΗ ΓΙΑ ΤΟΝ ΣΥΓΚΕΚΡΙΜΕΝΟ ΧΡΗΣΤΗ
-    // ====================
-    // 1. Φόρτωσε όλα τα δεδομένα όλων των χρηστών
-    const allUsersData = JSON.parse(localStorage.getItem('allWeekendTrips')) || {};
-    
-    // 2. Αποθήκευσε τις εκδρομές ΜΟΝΟ για αυτόν τον χρήστη
-    allUsersData[CURRENT_USER_ID] = savedTrips;
-    
-    // 3. Αποθήκευσε πίσω στο localStorage
-    localStorage.setItem('allWeekendTrips', JSON.stringify(allUsersData));
+    // ΑΠΟΘΗΚΕΥΣΗ
+    saveTripsToStorage();
    
     // Ενημέρωση UI
     const btn = document.querySelector(`[data-trip-id="${tripId}"]`);
