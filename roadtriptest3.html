@@ -1052,10 +1052,44 @@
         </div>
     </div>
 
-    <script>
-        // ====================
-        // ΚΥΡΙΑ ΔΕΔΟΜΕΝΑ ΕΚΔΡΟΜΩΝ
-        // ====================
+    
+        <script>
+    // ====================
+    // ΔΗΜΙΟΥΡΓΙΑ ΜΟΝΑΔΙΚΟΥ ID ΧΡΗΣΤΗ
+    // ====================
+    function getUserId() {
+        let userId = localStorage.getItem('weekend_trips_user_id');
+        
+        if (!userId) {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'weekend_trips_user_id') {
+                    userId = value;
+                    localStorage.setItem('weekend_trips_user_id', userId);
+                    break;
+                }
+            }
+        }
+        
+        if (!userId) {
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('weekend_trips_user_id', userId);
+            
+            const expiryDate = new Date();
+            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            document.cookie = `weekend_trips_user_id=${userId}; expires=${expiryDate.toUTCString()}; path=/`;
+        }
+        
+        return userId;
+    }
+
+    const CURRENT_USER_ID = getUserId();
+    console.log('User ID:', CURRENT_USER_ID);
+
+    // ====================
+    // ΚΥΡΙΑ ΔΕΔΟΜΕΝΑ ΕΚΔΡΟΜΩΝ
+    // ====================
         const weekendTrips = {
             // ΡΩΜΗ, ΙΤΑΛΙΑ
             'rome': [
@@ -7400,41 +7434,50 @@ let currentCity = 'rome';
 let currentTab = 'weekend';
 let currentDistanceFilter = 'all';
 let currentAttraction = null;
-
 // ====================
-// ΒΗΜΑ 2: ΔΗΜΙΟΥΡΓΙΑ ΜΟΝΑΔΙΚΟΥ ID ΓΙΑ ΤΟΝ ΧΡΗΣΤΗ
+// ΦΟΡΤΩΣΗ ΑΠΟΘΗΚΕΥΜΕΝΩΝ ΓΙΑ ΑΥΤΟΝ ΤΟΝ ΧΡΗΣΤΗ
 // ====================
-function getOrCreateUserId() {
-    // Έλεγχος αν υπάρχει cookie με όνομα "weekend_user_id"
-    const cookies = document.cookie.split(';');
-    
-    for (let cookie of cookies) {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'weekend_user_id') {
-            return value; // Βρήκαμε το ID του χρήστη
+function loadSavedTrips() {
+    try {
+        // Πρώτα δοκιμάζουμε από localStorage
+        const allData = JSON.parse(localStorage.getItem('weekend_trips_data')) || {};
+        
+        // Παίρνουμε μόνο τα δεδομένα αυτού του χρήστη
+        const userData = allData[CURRENT_USER_ID];
+        
+        if (userData && userData.savedTrips) {
+            console.log('✅ Φορτώθηκαν', userData.savedTrips.length, 'αποθηκευμένες εκδρομές');
+            return userData.savedTrips;
         }
+        
+        // Εναλλακτικά, δοκιμάζουμε από cookies
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name.trim() === `weekend_trips_${CURRENT_USER_ID}`) {
+                try {
+                    const decoded = decodeURIComponent(value);
+                    const data = JSON.parse(decoded);
+                    console.log('✅ Φορτώθηκαν από cookies:', data.savedTrips?.length || 0, 'εκδρομές');
+                    return data.savedTrips || [];
+                } catch (e) {
+                    console.error('Σφάλμα ανάγνωσης cookies:', e);
+                }
+                break;
+            }
+        }
+        
+        console.log('ℹ️ Δεν βρέθηκαν αποθηκευμένες εκδρομές');
+        return [];
+    } catch (error) {
+        console.error('Σφάλμα φόρτωσης αποθηκευμένων:', error);
+        return [];
     }
-    
-    // Αν δεν υπάρχει cookie, δημιουργούμε ΝΕΟ χρήστη
-    const newUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    
-    // Αποθηκεύουμε το cookie για 1 χρόνο (365 ημέρες)
-    document.cookie = `weekend_user_id=${newUserId}; max-age=${365*24*60*60}; path=/`;
-    
-    return newUserId;
 }
 
-const CURRENT_USER_ID = getOrCreateUserId();
-console.log('Ο χρήστης έχει ID:', CURRENT_USER_ID);
+// Αρχική φόρτωση
+let savedTrips = loadSavedTrips();
 
-// ====================
-// ΒΗΜΑ 3: ΦΟΡΤΩΣΗ ΑΠΟΘΗΚΕΥΜΕΝΩΝ ΓΙΑ ΤΟΝ ΣΥΓΚΕΚΡΙΜΕΝΟ ΧΡΗΣΤΗ
-// ====================
-// Φορτώνουμε όλα τα δεδομένα όλων των χρηστών
-const allUsersData = JSON.parse(localStorage.getItem('allWeekendTrips')) || {};
-
-// Παίρνουμε μόνο τα δεδομένα του τρέχοντα χρήστη
-let savedTrips = allUsersData[CURRENT_USER_ID] || [];
 
         // ====================
         // DOM ELEMENTS
@@ -8173,3 +8216,4 @@ function openSavedAttractionModal(tripIndex, attractionIndex) {
     </script>
 </body>
 </html>
+
