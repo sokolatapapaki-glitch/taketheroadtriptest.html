@@ -7475,14 +7475,37 @@ function loadSavedTrips() {
     }
 }
 
-// Αρχική φόρτωση
+ // Αρχική φόρτωση
 let savedTrips = loadSavedTrips();
 
+// ====================
+// ΑΠΟΘΗΚΕΥΣΗ ΓΙΑ ΑΥΤΟΝ ΤΟΝ ΧΡΗΣΤΗ
+// ====================
+function saveTripsToStorage() {
+    try {
+        // 1. Αποθήκευση στο localStorage
+        const allData = JSON.parse(localStorage.getItem('weekend_trips_data')) || {};
+        allData[CURRENT_USER_ID] = {
+            savedTrips: savedTrips,
+            lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('weekend_trips_data', JSON.stringify(allData));
+        
+        // 2. Αποθήκευση σε cookie (για περισσότερη μονιμότητα)
+        const expiryDate = new Date();
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        const dataStr = JSON.stringify({ savedTrips: savedTrips });
+        document.cookie = `weekend_trips_${CURRENT_USER_ID}=${encodeURIComponent(dataStr)}; expires=${expiryDate.toUTCString()}; path=/`;
+        
+        console.log('✅ Δεδομένα αποθηκεύτηκαν για user:', CURRENT_USER_ID);
+    } catch (error) {
+        console.error('Error saving trips:', error);
+    }
+}
 
         // ====================
         // DOM ELEMENTS
-        // ====================
-        const citySelect = document.getElementById('citySelect');
+        // ====================       const citySelect = document.getElementById('citySelect');
         const searchBtn = document.getElementById('searchBtn');
         const loadingEl = document.getElementById('loading');
         const errorState = document.getElementById('errorState');
@@ -8060,26 +8083,26 @@ function showSavedTrips() {
 function removeSavedTrip(tripId) {
     const index = savedTrips.findIndex(t => t.id === tripId);
     
-    if (index !== -1) {
-        const tripName = savedTrips[index].title;
-        savedTrips.splice(index, 1);
-        
-        // Αποθήκευση
-        localStorage.setItem('savedWeekendTrips', JSON.stringify(savedTrips));
-        
-        // Ενημέρωση UI
-        showNotification(`🗑️ Η εκδρομή "${tripName}" αφαιρέθηκε`, 'warning');
-        
-        // Ενημέρωση στατιστικών
-        updateStats();
-        
-        // Επαναφορά προβολής
-        if (savedTrips.length === 0) {
-            showSavedTrips(); // Θα δείξει το μήνυμα "δεν έχετε αποθηκεύσει"
-        } else {
-            showSavedTrips(); // Επαναφόρτωση με τα υπόλοιπα
-        }
+if (index !== -1) {
+    const tripName = savedTrips[index].title;
+    savedTrips.splice(index, 1);
+    
+    // Αποθήκευση
+    saveTripsToStorage();
+    
+    // Ενημέρωση UI
+    showNotification(`🗑️ Η εκδρομή "${tripName}" αφαιρέθηκε`, 'warning');
+    
+    // Ενημέρωση στατιστικών
+    updateStats();
+    
+    // Επαναφορά προβολής
+    if (savedTrips.length === 0) {
+        showSavedTrips(); // Θα δείξει το μήνυμα "δεν έχετε αποθηκεύσει"
+    } else {
+        showSavedTrips(); // Επαναφόρτωση με τα υπόλοιπα
     }
+}
 }
 
 // ====================
